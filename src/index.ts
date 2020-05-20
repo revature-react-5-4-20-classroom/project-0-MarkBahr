@@ -1,103 +1,88 @@
+//Remember to Un-comment all the login stuff when other stuff done. 
 import express from 'express';
-import bodyParser from 'body-parser'; // parses it as json, its a bodyparser. 
-import { User } from './models/User'; // from this directory
-// import { Role } from './models/Role';
-import { Reimbursement } from './models/Reimbursement'; // from this directory
-// import { ReimbursementStatus } from './models/ReimbursementStatus';
-// import { ReimbursementType } from './models/ReimbursementType';
+import { User } from './models/User';
+import { Application, Request, Response, NextFunction } from 'express';
+import { loggingMiddleware } from './middleware/loggingMiddleware';
+import { sessionMiddleware } from './middleware/sessionMiddleware';
+import bodyParser from 'body-parser';
+import { userRouter, findUserByLoginInfo } from './routers/userRouter';
+import { myUsers, reimbursements } from './fake-data';
+import { reimbursementRouter } from './routers/reimbursementRouter';
+import { connectionPool } from './repository';
+import { findReimbursmentByStatus } from './repository/user-data-access';
+import { PoolClient, QueryResult } from "pg";
 
-import {Application, Request, Response} from 'express'; // Start like this for non-default
-import { users, reimbursements } from './fake-data';
+const app: Application = express();
 
-const app : Application = express();
-
+//This applies to all endpoints.
 app.use(bodyParser.json());
 
-app.listen(2800, () => {
-    console.log("expense tracker has started");
-});
+app.use(sessionMiddleware);
 
-
-app.get('/users', (req:Request, res:Response) => {
-    res.json(getAllUsers());
-});
-
-
-app.get('users/:id', (req:Request, res:Response) => {
-    const id = +req.params.id;
-    if(isNaN(id)) {
-        res.status(400).send('ID must be a number');
-    } else {
-        res.json(getUserById(id));
+app.get('/views', (req: Request, res: Response) => {
+    console.log(req.session);
+    if(req.session && req.session.views) {
+        req.session.views++;
+        res.send(`Reached this endpoint ${req.session.views} times`);
+      } else if(req.session) {
+        req.session.views = 1;
+        res.send('Reached the views endpoint for the first time');
+      } else {
+        res.send('Reached the views endpoint without a session')
     }
 });
 
+function execution() {
+    console.log('Marks Expense Reimbursement System has started.');
+}
 
+execution();
 
-/* Figure out how to do patch and update before finishing this one
-app.patch('/users', (req: Request, res: Response) => {
-    let {userId, username, password, firstName, lastName, email, role} = req.body;
-    if(userId && username && password && firstName && lastName && email && role) {
-        updateUser(new User(userId, username, password, firstName, lastName, email, role));
-        res.sendStatus(2)
-    }
-});
-*/
-
-
-// login
-app.post('/login', (req:Request, res:Response) => {
-    let {username, password} = req.body;
-    if(this.username === username && this.password === password) {
-        res.sendStatus(200);
-    } else {
-        res.status(400).send('Username and/or password incorrect.');
-    }
-});
-
-// Req username & string, res: user, error response 400 "invalid credentials"
+//Users to log in with username and password
 app.post('/login', (req: Request, res: Response) => {
-    let {}
-    
-})
-
-// Use path parameter to get by id using :param
-app.get('/users/:id', (req: Request, res: Response) => {
-    const id = +req.params.id;
-    if(isNaN(id)) {
-        res.status(400).send('Must include numeric id in path');
+    const {username, password} = req.body;
+    if( !username || !password) {
+        res.status(400).send('Please provide both a username and password');
     } else {
-        res.json(getUsersById(id));
+        try{
+            const user = findUserByLoginInfo(username, password);
+            if(req.session) {
+                req.session.user = user;
+            }
+            res.json(user);
+        } catch (e) {
+            console.log(e.message);
+            res.status(400).send('Invalid credentials');
+        }
     }
-})
+});
 
-// Function to enable Admin to access all users.
-function getAllUsers(): User[] {
-    return users;
-}
+// has /users endpoint with userRouter that gets all users
+app.use('/users', userRouter);
 
+// has /reimburesments endpoint with reimbursmentRouter that gets all users
+app.use('/reimbursements', reimbursementRouter);
 
-// Function to return a specific user.
-function getUserById(id: number) : User {
-    return users.filter((user)=>{return users.id === id;})[0];
-} 
+// NOT ACCESSIBLE! This endpoint needs some work. 
+reimbursementRouter.get('/reimbursements/status/:statusId', (req: Request, res: Response) => {
+    const {status} = req.body;
+    res.json(findReimbursmentByStatus(status));
+  });
 
-// goes with above app.get to get user by id
-function getUsersById(id: number): User {
-    return users.filter((user) => {
-        return user.id === id;
-    })[0];
-}
-
-
-
-// Start with reimbursements -------------------------------
-
-app.get('/reimbursements', (req: Request, res: Response) => {
-    res.json(getAllReimbursements);
-})
-
-// Function to enable Admin to access all users.
-function getAllReimbursements(): Reimbursement[] {
-    return reimbursements;
-}
+app.listen(2400, () => {
+  
+    console.log("No errors! Hooray!!");
+    
+    connectionPool.connect().then(
+      (client: PoolClient)=>{
+        console.log('connected');
+        
+        client.query('SELECT * FROM reimbursements;').then(
+          (result : QueryResult) => {
+            console.log(result.rows[0]);
+          }
+        )
+    }).catch((err)=>{
+      console.error(err.message);
+    })
+  });
