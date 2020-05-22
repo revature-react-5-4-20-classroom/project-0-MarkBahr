@@ -1,4 +1,3 @@
-# Run this to get your database connected for project 0
 export PG_HOST=database-2.c9cvqdxkazlz.us-east-1.rds.amazonaws.com
 export PG_USER=postgres
 export PG_PASSWORD=postaws#85

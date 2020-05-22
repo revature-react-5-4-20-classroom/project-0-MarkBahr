@@ -4,12 +4,14 @@ import { User } from './models/User';
 import { Application, Request, Response, NextFunction } from 'express';
 import { loggingMiddleware } from './middleware/loggingMiddleware';
 import { sessionMiddleware } from './middleware/sessionMiddleware';
+// import { authAdminMiddleware } from './middleware/authMiddleware';
 import bodyParser from 'body-parser';
-import { userRouter, findUserByLoginInfo } from './routers/userRouter';
-import { myUsers, reimbursements } from './fake-data';
+import { userRouter } from './routers/userRouter';
+import { users, reimbursements } from './fake-data';
 import { reimbursementRouter } from './routers/reimbursementRouter';
 import { connectionPool } from './repository';
-import { findReimbursmentByStatus } from './repository/user-data-access';
+import { findUserByLoginInfo } from './repository/user-data-access';
+import { findReimbursementByStatus } from './repository/reimbursement-data-access';
 import { PoolClient, QueryResult } from "pg";
 
 const app: Application = express();
@@ -19,18 +21,9 @@ app.use(bodyParser.json());
 
 app.use(sessionMiddleware);
 
-app.get('/views', (req: Request, res: Response) => {
-    console.log(req.session);
-    if(req.session && req.session.views) {
-        req.session.views++;
-        res.send(`Reached this endpoint ${req.session.views} times`);
-      } else if(req.session) {
-        req.session.views = 1;
-        res.send('Reached the views endpoint for the first time');
-      } else {
-        res.send('Reached the views endpoint without a session')
-    }
-});
+app.use(loggingMiddleware);
+
+// app.use(authAdminMiddleware);
 
 function execution() {
     console.log('Marks Expense Reimbursement System has started.');
@@ -62,12 +55,6 @@ app.use('/users', userRouter);
 
 // has /reimburesments endpoint with reimbursmentRouter that gets all users
 app.use('/reimbursements', reimbursementRouter);
-
-// NOT ACCESSIBLE! This endpoint needs some work. 
-reimbursementRouter.get('/reimbursements/status/:statusId', (req: Request, res: Response) => {
-    const {status} = req.body;
-    res.json(findReimbursmentByStatus(status));
-  });
 
 app.listen(2400, () => {
   
