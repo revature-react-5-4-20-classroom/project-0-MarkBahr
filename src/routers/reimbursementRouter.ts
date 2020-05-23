@@ -2,13 +2,25 @@ import express, { Router, Request, Response, NextFunction } from 'express';
 import { Reimbursement } from '../models/Reimbursement';
 import { reimbursements } from '../fake-data';
 import { addNewReimbursement, findReimbursementByStatus, getAllReimbursements, updateReimbursement, findReimbursementByUser } from '../repository/reimbursement-data-access';
-//import {authReadOnlyMiddleware} from '../middleware/authMiddleware';
+// import { authAdminMiddleware } from '../middleware/authMiddleware';
 import { ReimbursementStatus } from '../models/ReimbursementStatus';
 import { User } from '../models/User';
 
 export const reimbursementRouter : Router = express.Router();
 
- // reimbursementRouter.use(authReadOnlyMiddleware);
+reimbursementRouter.use((req: Request, res: Response, next: NextFunction) => {
+  if(req.method === 'POST'){
+    next();
+  }else if(req.session && req.session.user.role == 1) {
+    next();
+  } else if(req.session && +req.params.userId === req.session.user.user_id){
+    next();
+  } else {
+    res.status(401).send('The incoming token has expired');
+  }
+}) 
+
+// reimbursementRouter.use(authReadOnlyMiddleware);
 /*
 //This will have to use a different function to get status. Add: /status/:statusId
 // Whenever you have a query to the database, you have to use a query. 
@@ -35,9 +47,19 @@ reimbursementRouter.post('/', (req: Request, res: Response) => {
 reimbursementRouter.patch('/', async function(req: Request, res: Response){
   let {id, author, amount, date_submitted, date_resolved, description, resolver, status, reimbursement_type} = req.body;
   let columns = req.body;
-  if(id &author | amount | date_submitted | date_resolved | description | resolver | status | reimbursement_type){
-    await updateReimbursement(columns);
-    res.sendStatus(201);
+  if(id & author | amount | date_submitted | date_resolved | description | resolver | status | reimbursement_type){
+    console.log('place1');
+    await updateReimbursement(columns)
+      .then((reimbursement: Reimbursement) => {
+        console.log(reimbursement);
+        res.status(201).json(reimbursement);
+      })
+      .catch((e: Error) => {
+        console.log(e.message);
+        res.status(400);
+      })
+    console.log("Im here");
+    
   } else {
   res.status(400).send('No reimbursement fields were updated');
   }
@@ -55,17 +77,21 @@ reimbursementRouter.get('/', async (req: Request, res: Response, next: NextFunct
 
 // NOT ACCESSIBLE! This endpoint needs some work. 
 reimbursementRouter.get('/status/:statusId', async (req: Request, res: Response, next: NextFunction) => {
-  try {
-    let status1 = new ReimbursementStatus(1, 'Submitted to Finance Manager');
-  const reimbursement : Reimbursement = await findReimbursementByStatus(status1);
-  res.json(reimbursement);
-  } catch(e){
-    next(e);
-  }
+  const statusId = +req.params.statusId;
+  findReimbursementByStatus(statusId)
+  .then((reimbursement: Reimbursement[]) => {
+    console.log(reimbursement);
+    res.status(201).json(reimbursement);
+  })
+  .catch((e: Error) => {
+    console.log(e.message);
+    res.status(400);
+  })
 
 });
 
 //Find reimbursement by user
+// Keep the parameter named userId, it's required by the middleware. 
 reimbursementRouter.get('/author/userId/:userId', async function(req: Request, res: Response, next: NextFunction) {
   try{
     let user1 = new User(12, 'cGreen', '246password', 'Cameron', "Green", 'cgreen89@gmail.com', 'Finance Manager');

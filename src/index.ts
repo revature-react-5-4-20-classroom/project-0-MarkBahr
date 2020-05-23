@@ -4,7 +4,6 @@ import { User } from './models/User';
 import { Application, Request, Response, NextFunction } from 'express';
 import { loggingMiddleware } from './middleware/loggingMiddleware';
 import { sessionMiddleware } from './middleware/sessionMiddleware';
-// import { authAdminMiddleware } from './middleware/authMiddleware';
 import bodyParser from 'body-parser';
 import { userRouter } from './routers/userRouter';
 import { users, reimbursements } from './fake-data';
@@ -16,14 +15,17 @@ import { PoolClient, QueryResult } from "pg";
 
 const app: Application = express();
 
+// Check if webhook works by pushing new endpoint
+app.get('/new-endpoint', (req: Request, res: Response) =>{
+  res.send('Webhoodks worked!');
+})
+
 //This applies to all endpoints.
 app.use(bodyParser.json());
 
 app.use(sessionMiddleware);
 
 app.use(loggingMiddleware);
-
-// app.use(authAdminMiddleware);
 
 function execution() {
     console.log('Marks Expense Reimbursement System has started.');
@@ -32,13 +34,14 @@ function execution() {
 execution();
 
 //Users to log in with username and password
-app.post('/login', (req: Request, res: Response) => {
+app.post('/login', async (req: Request, res: Response) => {
     const {username, password} = req.body;
     if( !username || !password) {
         res.status(400).send('Please provide both a username and password');
     } else {
         try{
-            const user = findUserByLoginInfo(username, password);
+            const user = await findUserByLoginInfo(username, password);
+            console.log(user);
             if(req.session) {
                 req.session.user = user;
             }

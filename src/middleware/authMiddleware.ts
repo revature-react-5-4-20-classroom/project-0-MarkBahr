@@ -4,14 +4,11 @@ import { Role, } from '../models/Role';
 export const authAdminMiddleware = (req: Request, res: Response, next: NextFunction) => {
     // if no session or no user on that session
     
-    let finManage = new Role(1, 'Finance Manager');
-    let admin = new Role(2, 'Administrator');
-    let someUser = new Role(3, 'User');
-    let guest = new Role(4, 'Guest');
     
-    if(!req.session || !req.session.finManage || !req.session.admin || !req.session.someUser || !req.session.guest) {
+
+    if() {
       res.status(401).send('Please login');
-    } else if (req.session.user.roleId !== (1 || 2 || 3 || 4)) {
+    } else if (req.session.user.roleId !== ()) {
       res.status(403).send('You are not authorized');
     } else {
       next();

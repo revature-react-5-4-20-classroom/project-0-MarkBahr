@@ -25,12 +25,12 @@ userRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // I have to remember that whatever comes after the / in the url will come after users in the index.ts
-userRouter.get('/:user_id', (req: Request, res: Response) => {
-    const id = +req.params.id;
+userRouter.get('/:user_id', async (req: Request, res: Response) => {
+    const id = +req.params.user_id;
     if(isNaN(id)) {
       res.status(400).send('Must include numeric id in path');
     } else {
-      res.json(getUserById(id));
+      res.json(await getUserById(id));
     }
   });
 
@@ -39,27 +39,19 @@ userRouter.get('/:user_id', (req: Request, res: Response) => {
 userRouter.patch('/', async function(req: Request, res: Response){
   let {user_id, username, password, first_name, last_name, email, role} = req.body;
   let columns = req.body;
+  console.log('above if user');
   if(user_id & username | password | first_name | last_name | email | role){
-    await updateUser(columns);
-    res.sendStatus(201);
+    console.log('inside if user');
+    await updateUser(columns)
+    .then((user: User) => {
+      console.log(user);
+    res.sendStatus(201).json(user);
+    })
+    .catch((e: Error) => {
+      console.log(e.message);
+      res.status(400);
+    })
   } else {
   res.status(400).send('No user fields were updated');
   }
 });
-
-
-/*
-userRouter.post('/', async (req: Request, res: Response) => {
-    let {userId, username, password, firstName, lastName, email, role} = req.body;
-    if(userId && username && password && firstName && lastName && email && role) {
-      await addNewUser(new User(userId, username, password, firstName, lastName, email, role));
-      res.sendStatus(201);
-    } else {
-      res.status(400).send('Please include required fields.');
-    }
-  });
-  
-
-// - - - - - - - - - - -
-*/
-

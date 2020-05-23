@@ -37,14 +37,12 @@ export async function getUserById(id: number) : Promise<User> {
             `SELECT * FROM users 
             WHERE users.user_id = $1`, [id]
         );
+        console.log(result.rows);
         const userMatchId = result.rows.map((u) => {
             return new User(u.user_id, u.username, u.password, u.first_name, u.last_name, u.email, u.role);
           });
-            if(userMatchId) {
-                return users.filter((user)=>{return user.user_id === id;})[0];
-            } else {
-                throw new Error('Invalid ID');
-            }
+          console.log(userMatchId);
+            return userMatchId[0];
     }catch (e) {
         throw new Error(`Failed to validate User with DB: ${e.message}`);
     } finally {
@@ -87,34 +85,34 @@ export async function findUserByLoginInfo(username: string, password: string) : 
     }  
   }
 
-
 // ERRORS HERE!! Would the following work with this function: result.command: string
 export async function updateUser(user: User) :Promise<User> {
     let client : PoolClient = await connectionPool.connect();
     try{
-        const userIdResult : QueryResult = await client.query(
-            `SELECT user_id FROM users WHERE user_id = $1`, [user.user_id]
-        );
- 
+        
             // Update the reimbursement with appropriate id
-        if(user.user_id !== undefined){
-            if(user.username !== undefined){
-                let updateUsername = await client.query('UPDATE users SET username=$1 WHERE user_id=$2', [user.username, user.user_id]);
-            } if(user.password !== undefined){
-                    let updatePassword = await client.query('UPDATE users SET password=$1 WHERE user_id=$2', [user.password, user.user_id]);
-            } if(user.first_name !== undefined){
-                let updateFirstName = await client.query('UPDATE users SET first_name=$1 WHERE user_id=$2', [user.first_name, user.user_id]);
-            } if(user.last_name !== undefined){
-                let updateLastName = await client.query('UPDATE users SET last_name=$1 WHERE user_id=$2', [user.last_name, user.user_id]);
-            } if(user.email !== undefined){
-                let updateEmail = await client.query('UPDATE users SET email=$1 WHERE user_id=$2', [user.email, user.user_id]);
-            } if(user.role !== undefined){
-                let updateRole = await client.query('UPDATE users SET role=$1 WHERE user_id=$2', [user.role, user.user_id]);
+        if(user.user_id){
+            if(user.username){
+                await client.query('UPDATE users SET username=$1 WHERE user_id=$2;', [user.username, user.user_id]);
+            } if(user.password){
+                await client.query('UPDATE users SET password=$1 WHERE user_id=$2;', [user.password, user.user_id]);
+            } if(user.first_name){
+                await client.query('UPDATE users SET first_name=$1 WHERE user_id=$2;', [user.first_name, user.user_id]);
+            } if(user.last_name){
+                await client.query('UPDATE users SET last_name=$1 WHERE user_id=$2;', [user.last_name, user.user_id]);
+            } if(user.email){
+                await client.query('UPDATE users SET email=$1 WHERE user_id=$2;', [user.email, user.user_id]);
+            } if(user.role){
+                await client.query('UPDATE users SET role=$1 WHERE user_id=$2;', [user.role, user.user_id]);
             }
         };
 
-        return userIdResult.rows.map((u) => {
-            return new User(u.userId, u.username, u.password, u.firstName, u.lastName, u.email, u.role)
+        const userIdResult : QueryResult = await client.query(
+            `SELECT user_id FROM users WHERE user_id = $1`, [user.user_id]
+        );
+
+        return userIdResult.rows.map(
+            (u) => {return new User(u.userId, u.username, u.password, u.firstName, u.lastName, u.email, u.role)
         })[0];
     } catch (e) {
         throw new Error(`Failed to add use to DB: ${e.message}`);

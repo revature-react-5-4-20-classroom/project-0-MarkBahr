@@ -67,25 +67,19 @@ export async function getAllReimbursements(): Promise<Reimbursement[]> {
 }
 
 // Find Reimbursement by Status
-export async function findReimbursementByStatus(reimbursementStatus: ReimbursementStatus) : Promise<Reimbursement> {
+export async function findReimbursementByStatus(statusId: number) : Promise<Reimbursement[]> {
     let client : PoolClient;
     client = await connectionPool.connect();
     try{
-        let result : QueryResult;
-
-        result = await client.query(
-            `SELECT reimbursements.id, reimbursements.author, reimbursements.amount, reimbursements.date_submitted, reimbursements.date_resolved, reimbursements.description, reimbursements.resolver, reimbursements.status, reimbursements.reimbursement_type
-            FROM reimbursements INNER JOIN reimbursement_status ON reimbursements.status = reimbursement_status.status_id
-            WHERE reimbursements.status_id = $1;`, [reimbursementStatus]
-        );
-        const reimbMatchStatus = result.rows.map((r) => {
-            return new Reimbursement(r.id, r.author, r.amount, r.date_submitted, r.date_resolved, r.description, r.resolver, r.status, r.reimbursement_type);
+        
+        let result : QueryResult = await client.query(
+            'SELECT * FROM reimbursements WHERE status = $1;', [statusId]
+        )
+        
+        return result.rows.map(
+           (r) => {return new Reimbursement(r.id, r.author, r.amount, r.date_submitted, r.date_resolved, r.description, r.resolver, r.status, r.reimbursement_type);
         });
-        if(reimbMatchStatus.length > 0) {
-            return reimbMatchStatus[0];
-        } else {
-            throw new Error('Status not matched by any reimbursement');
-        }
+    
     } catch (e) {
         throw new Error(`Failed to find status ${e.message}`);
     } finally {
@@ -93,40 +87,48 @@ export async function findReimbursementByStatus(reimbursementStatus: Reimburseme
     }
 }
 
-
-
 // UPDATE REIMBURSEMENT Goes w/ update reimbursement endpoint. Here we have to use the alter table alter column perhaps
 export async function updateReimbursement(reimbursement: Reimbursement) : Promise<Reimbursement> {
     let client : PoolClient = await connectionPool.connect();
+    console.log('abovetry');
     try{
-        // Get the reimbursement id for the reimbursement.
-        let result : QueryResult = await client.query(
-            `SELECT * FROM reimbursements WHERE id = $1`, [reimbursement.id]
-        );
-
+            console.log(reimbursement);
+            console.log('aboveIf');
         // Update the reimbursement with appropriate id
-        if(reimbursement.id !== undefined){
-            if(reimbursement.author !== undefined){
-                let updateAuthor = await client.query('UPDATE reimbursements SET author=$1 WHERE id=$2', [reimbursement.author, reimbursement.id]);
-            } if(reimbursement.amount !== undefined){
-                    let updateAmount = await client.query('UPDATE reimbursements SET amount=$1 WHERE is=$2', [reimbursement.amount, reimbursement.id]);
-            } if(reimbursement.date_submitted !== undefined){
-                let updateDateSub = await client.query('UPDATE reimbursements SET date_submitted=$1 WHERE id=$2', [reimbursement.date_submitted, reimbursement.id]);
-            } if(reimbursement.date_resolved !== undefined){
-                let updateDateRes = await client.query('UPDATE reimbursements SET date_resolved=$1 WHERE id=$2', [reimbursement.date_resolved, reimbursement.id]);
-            } if(reimbursement.description !== undefined){
-                let updateDescript = await client.query('UPDATE reimbursements SET description=$1 WHERE id=$2', [reimbursement.description, reimbursement.id]);
-            } if(reimbursement.resolver !== undefined){
-                let updateResolver = await client.query('UPDATE reimbursements SET resolver=$1 WHERE id=$2', [reimbursement.resolver, reimbursement.id]);
-            } if(reimbursement.status !== undefined){
-                let updateAmount = await client.query('UPDATE reimbursements SET status=$1 WHERE id=$2', [reimbursement.status, reimbursement.id]);
-            } if(reimbursement.reimbursement_type !== undefined){
-                let updateType = await client.query('UPDATE reimbursements SET reimbursement_type=$1 WHERE id=$2', [reimbursement.reimbursement_type, reimbursement.id]);
+        if(reimbursement.id){
+            console.log('insideIf1');
+            if(reimbursement.author){
+                await client.query('UPDATE reimbursements SET author = $1 WHERE id = $2;', [reimbursement.author, reimbursement.id]);
+            } if(reimbursement.amount){
+                console.log('not fail');
+                await client.query('UPDATE reimbursements SET amount = $1 WHERE id = $2;', [reimbursement.amount, reimbursement.id]);
+            } if(reimbursement.date_submitted){
+                await client.query('UPDATE reimbursements SET date_submitted = $1 WHERE id = $2;', [reimbursement.date_submitted, reimbursement.id]);
+            } if(reimbursement.date_resolved){
+                await client.query('UPDATE reimbursements SET date_resolved = $1 WHERE id = $2;', [reimbursement.date_resolved, reimbursement.id]);
+            } if(reimbursement.description){
+                await client.query('UPDATE reimbursements SET description = $1 WHERE id = $2;', [reimbursement.description, reimbursement.id]);
+            } if(reimbursement.resolver){
+                await client.query('UPDATE reimbursements SET resolver = $1 WHERE id = $2;', [reimbursement.resolver, reimbursement.id]);
+            } if(reimbursement.status){
+                await client.query('UPDATE reimbursements SET status = $1 WHERE id = $2;', [reimbursement.status, reimbursement.id]);
+            } if(reimbursement.reimbursement_type){
+                await client.query('UPDATE reimbursements SET reimbursement_type = $1 WHERE id = $2;', [reimbursement.reimbursement_type, reimbursement.id]);
             }
         };
+        
+        // Get the reimbursement id for the reimbursement.
+        let result : QueryResult = await client.query(
+            'SELECT * FROM reimbursements WHERE id = $1', [reimbursement.id]
+        );
+
+        console.log('before Map');
+        console.log(result.rows[0]);
+
         return result.rows.map(
             (r)=>{return new Reimbursement(r.id, r.author, r.amount, r.date_submitted, r.date_resolved, r.description, r.resolver, r.status, r.reimbursement_type)}
         )[0];
+    
     } catch (e) {
         throw new Error(`Failed to find status ${e.message}`);
     }
@@ -157,5 +159,3 @@ export async function findReimbursementByUser(user : User) : Promise<Reimburseme
             throw new Error(`Failed to find user ${e.message}`);
     } 
 }
-
-
