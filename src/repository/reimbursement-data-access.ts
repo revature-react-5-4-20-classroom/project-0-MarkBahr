@@ -36,31 +36,31 @@ export async function getAllReimbursements(): Promise<Reimbursement[]> {
   export async function addNewReimbursement(reimbursement: Reimbursement) : Promise<Reimbursement> {
     let client : PoolClient = await connectionPool.connect();
     try {
+        /* Get the author of the current 
         const reimbursementIdResult : QueryResult = await client.query(
             `SELECT * FROM reimbursements WHERE reimbursment.reimbursement_type = $1`, [reimbursement.reimbursement_type]
         );
         
         // get the reimbursementId only
         const reimbursementId = reimbursementIdResult.rows[0].reimbursementId;
-        
-        // Add the rest of the information about the reimbursement
-        let addReimbursementResult : QueryResult = await client.query(
-            `INSERT INTO users (author, amount, date_submitted, date_resolved, description, resolver, status, type) VALUES
-            ($1, $2, $3);`, [reimbursement.author, reimbursement.amount, reimbursement.date_submitted, reimbursement.date_resolved, reimbursement.description, reimbursement.resolver, reimbursement.status, reimbursement.reimbursement_type]
+        */
+
+        // Add information about the reimbursement
+        let addResult : QueryResult = await client.query(
+            `INSERT INTO reimbursements (id, author, amount, date_submitted, date_resolved, description, resolver, status, reimbursement_type) VALUES
+            (DEFAULT, $1, $2, $3, $4, $5, $6, $7, $8);`, [reimbursement.author, reimbursement.amount, reimbursement.date_submitted, reimbursement.date_resolved, reimbursement.description, reimbursement.resolver, reimbursement.status, reimbursement.reimbursement_type]
         )
 
         // Query the db for the new reimbursement
         let result : QueryResult = await client.query(
-            `SELECT reimbursements.id, reimbursements.author, reimbursements.amount, reimbursements.date_submitted, reimbursements.date_resolved, reimbursements.desription, reimbursements.resolver, reimbursements.status, reimbursements.reimbursement_type
-            FROM reimbursements INNER JOIN reimbursements ON reimbursements._id = roles.id
-            WHERE users.username = $1;`, [reimbursement.author, reimbursement.amount, reimbursement.date_submitted, reimbursement.date_resolved, reimbursement.description, reimbursement.resolver, reimbursement.status, reimbursement.reimbursement_type]
+            `SELECT * FROM reimbursements WHERE id = $1;`, [reimbursement.id]
         );
 
         return result.rows.map(
             (r)=>{return new Reimbursement(r.id, r.author, r.amount, r.date_submitted, r.date_resolved, r.description, r.resolver, r.status, r.reimbursement_type)}
         )[0];
     } catch (e) {
-        throw new Error(`No new reimbursement was added to DB: ${e.message}`);
+        throw new Error(`Failed to add reimbursement to DB: ${e.message}`);
     } finally {
         client && client.release();
     }
@@ -138,23 +138,16 @@ export async function updateReimbursement(reimbursement: Reimbursement) : Promis
 }
 
 // To find what reimbursements a user has authored:
-export async function findReimbursementByUser(user : User) : Promise<Reimbursement> {
+export async function findReimbursementByUser(userId : number) : Promise<Reimbursement[]> {
     try {
         let client : PoolClient = await connectionPool.connect();
         // Query to get an array of reimbursements made by taht user.
         let result : QueryResult = await client.query(
-            `SELECT reimbursements.id, reimbursements.author, reimbursements.amount, reimbursements.date_submitted, reimbursements.date_resolved, reimbursements.description, reimbursements.resolver, reimbursements.status, reimbursements.reimbursement_type
-            FROM reimbursements INNER JOIN users ON reimbursements.author = users.user_id
-            WHERE user_id = $1;`, [user.user_id]
+            `SELECT * FROM reimbursements WHERE author = $1;`, [userId]
         );
-        const reimbursment = result.rows.map((r) => {
+        return result.rows.map((r) => {
             return new Reimbursement(r.id, r.author, r.amount, r.date_submitted, r.date_resolved, r.description, r.resolver, r.status, r.reimbursement_type);
             });
-        if(reimbursment.length > 0) {
-          return reimbursment[0];
-        } else {
-          throw new Error('User not matched by any reimbursement');
-        } 
     } catch(e) {
             throw new Error(`Failed to find user ${e.message}`);
     } 

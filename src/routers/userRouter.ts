@@ -11,7 +11,17 @@ import { reimbursementRouter } from "./reimbursementRouter";
 
 export const userRouter: Router = express.Router();
 
-// userRouter.use(roleFactory);
+userRouter.use((req: Request, res: Response, next: NextFunction) => {
+  if((req.method === 'GET') && (req.session && req.session.user.role == 1)){
+    next();
+  } else if((req.method === 'PATCH') && (req.session && req.session.user.role == 2)){
+    next();
+  } else if(req.session && +req.params.userId === req.session.user_id){
+    next();
+  } else {
+    res.status(401).send('The incoming token has expired');
+  }
+});
 
 // - - - - - - - - - - -- - 
 // This project needs this to return just one user though
@@ -32,7 +42,7 @@ userRouter.get('/:user_id', async (req: Request, res: Response) => {
     } else {
       res.json(await getUserById(id));
     }
-  });
+});
 
 
 //Update reimbursement endpoint 
@@ -40,7 +50,7 @@ userRouter.patch('/', async function(req: Request, res: Response){
   let {user_id, username, password, first_name, last_name, email, role} = req.body;
   let columns = req.body;
   console.log('above if user');
-  if(user_id & username | password | first_name | last_name | email | role){
+  if(user_id && username || password || first_name || last_name || email || role){
     console.log('inside if user');
     await updateUser(columns)
     .then((user: User) => {

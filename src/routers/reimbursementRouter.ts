@@ -13,30 +13,21 @@ reimbursementRouter.use((req: Request, res: Response, next: NextFunction) => {
     next();
   }else if(req.session && req.session.user.role == 1) {
     next();
-  } else if(req.session && +req.params.userId === req.session.user.user_id){
+  } else if(req.session && +req.params.userId === req.session.users.user_id){
     next();
   } else {
     res.status(401).send('The incoming token has expired');
   }
 }) 
 
-// reimbursementRouter.use(authReadOnlyMiddleware);
-/*
-//This will have to use a different function to get status. Add: /status/:statusId
-// Whenever you have a query to the database, you have to use a query. 
-reimbursementRouter.get('/', (req:Request, res:Response) => {
-    let async : Reimbursement =  reimbursements
-    res.json(getAllReimbursements(reimbursementId, author, amount, dateSubmitted, dateResolved, description, resolver, status, type)); // call our function because we're separating concerns
-  });
-*/
 //  constructor(id:number, author:number, amount:number, date_submitted:Date, date_resolved:Date, description:string, resolver:number, status:number, reimbursement_type:number){
 // Submit Reimbursement Endpoint (the corresponding addNewReimbursment function is in user-data-access)
-reimbursementRouter.post('/', (req: Request, res: Response) => {
+reimbursementRouter.post('/', async (req: Request, res: Response) => {
   let {id, author, amount, date_submitted, date_resolved, description, resolver, status, reimbursement_type} = req.body;
   // Make sure we have received the correct fields
-  if(id && author && amount && date_submitted && date_resolved && description && resolver && status && reimbursement_type) {
-    addNewReimbursement(new Reimbursement(id, author, amount, date_submitted, date_resolved, description, resolver, status, reimbursement_type));
-    res.sendStatus(201);
+  if((id === 0) && author && amount && date_submitted && date_resolved && description && resolver && status && reimbursement_type) {
+    const reimbursement : Reimbursement = await addNewReimbursement(new Reimbursement(id, author, amount, date_submitted, date_resolved, description, resolver, status, reimbursement_type))
+    res.sendStatus(201).json(reimbursement);
   } else {
     // response status for not entering all the required information
     res.status(400).send('Please include all required reimbursement fields.');
@@ -93,12 +84,15 @@ reimbursementRouter.get('/status/:statusId', async (req: Request, res: Response,
 //Find reimbursement by user
 // Keep the parameter named userId, it's required by the middleware. 
 reimbursementRouter.get('/author/userId/:userId', async function(req: Request, res: Response, next: NextFunction) {
-  try{
-    let user1 = new User(12, 'cGreen', '246password', 'Cameron', "Green", 'cgreen89@gmail.com', 'Finance Manager');
-    const reimbursement : Reimbursement = await findReimbursementByUser(user1);
-    res.json(reimbursement);
-  } catch(e){
-      next(e);
-  } 
+    const userId = +req.params.userId;
+    findReimbursementByUser(userId)
+    .then((reimbursement: Reimbursement[]) => {
+      console.log(reimbursement);
+      res.status(201).json(reimbursement);
+    })
+    .catch((e: Error) => {
+      console.log(e.message);
+      res.status(400);
+    })  
 });
 

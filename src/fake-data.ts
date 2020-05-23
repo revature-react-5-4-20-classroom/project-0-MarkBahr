@@ -12,9 +12,9 @@ export const roles : Role[] = [
 */
 
 export const users : User[] = [
-    new User(7, 'gGreen', '123password', 'Gene', "Green", 'green87@gmail.com', 'Finance Manager'),
-    new User(8, 'bWhite', '1234password', 'Ben', 'White', 'benwhite@gmail.com', 'Administrator'),
-    new User(9, 'bCase', '234password', 'Brad', 'Camel', 'bradcam@yahoo.com', 'user')
+    new User(7, 'gGreen', '123password', 'Gene', "Green", 'green87@gmail.com', 1),
+    new User(8, 'bWhite', '1234password', 'Ben', 'White', 'benwhite@gmail.com', 2),
+    new User(9, 'bCase', '234password', 'Brad', 'Camel', 'bradcam@yahoo.com', 3)
 ]
 
 // Remember to place the date inside ''. 

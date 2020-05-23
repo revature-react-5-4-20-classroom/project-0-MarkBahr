@@ -70,8 +70,9 @@ export async function findUserByLoginInfo(username: string, password: string) : 
         FROM users INNER JOIN roles ON users.role = roles.role_id
         WHERE users.username = $1 AND users.password = $2;`, [username, password]
       );
+      
       const usersMatchingUsernamePassword = result.rows.map((u) => {
-        return new User(u.id, u.username, u.password, u.first_name, u.last_name, u.email, u.role);
+        return new User(u.user_id, u.username, u.password, u.first_name, u.last_name, u.email, u.role);
       })
       if(usersMatchingUsernamePassword.length > 0) {
         return usersMatchingUsernamePassword[0];
@@ -87,6 +88,7 @@ export async function findUserByLoginInfo(username: string, password: string) : 
 
 // ERRORS HERE!! Would the following work with this function: result.command: string
 export async function updateUser(user: User) :Promise<User> {
+    console.log('Inside updateUser');
     let client : PoolClient = await connectionPool.connect();
     try{
         
