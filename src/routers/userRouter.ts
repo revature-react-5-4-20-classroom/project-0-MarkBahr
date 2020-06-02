@@ -16,7 +16,7 @@ userRouter.use((req: Request, res: Response, next: NextFunction) => {
     next();
   } else if((req.method === 'PATCH') && (req.session && req.session.user.role == 2)){
     next();
-  } else if(req.session && +req.params.userId === req.session.user_id){
+  } else if(req.session && +req.params.userId === req.session.user.user_id){
     next();
   } else {
     res.status(401).send('The incoming token has expired');
@@ -35,8 +35,8 @@ userRouter.get('/', async (req: Request, res: Response, next: NextFunction) => {
 });
 
 // I have to remember that whatever comes after the / in the url will come after users in the index.ts
-userRouter.get('/:user_id', async (req: Request, res: Response) => {
-    const id = +req.params.user_id;
+userRouter.get('/:userId', async (req: Request, res: Response) => {
+    const id = +req.params.userId;
     if(isNaN(id)) {
       res.status(400).send('Must include numeric id in path');
     } else {

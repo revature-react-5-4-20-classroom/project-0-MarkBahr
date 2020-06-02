@@ -12,6 +12,7 @@ import { connectionPool } from './repository';
 import { findUserByLoginInfo } from './repository/user-data-access';
 import { findReimbursementByStatus } from './repository/reimbursement-data-access';
 import { PoolClient, QueryResult } from "pg";
+import { corsFilter } from './middleware/corsFilter';
 
 const app: Application = express();
 
@@ -19,6 +20,8 @@ const app: Application = express();
 app.get('/new-endpoint', (req: Request, res: Response) =>{
   res.send('Webhoodks worked!');
 })
+
+app.use(corsFilter);
 
 //This applies to all endpoints.
 app.use(bodyParser.json());
